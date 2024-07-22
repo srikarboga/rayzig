@@ -1,5 +1,6 @@
 //Reference https://raytracing.github.io/books/RayTracingInOneWeekend.html
 const std = @import("std");
+const printColor = @import("./color.zig").printColor;
 
 pub fn main() !u8 {
 
@@ -13,18 +14,16 @@ pub fn main() !u8 {
     var stdout = std.io.getStdOut().writer();
     try stdout.print("P3\n{} {}\n255\n", .{ image_width, image_height });
     for (0..image_height) |j| {
+        std.debug.print("\rScanlines remaining: {} ", .{image_height - j});
         for (0..image_width) |i| {
             const r = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(image_width - 1));
             const g = @as(f32, @floatFromInt(j)) / @as(f32, @floatFromInt(image_width - 1));
             const b = 0.0;
 
-            const ir = @as(u32, @intFromFloat(255.999 * r));
-            const ig = @as(u32, @intFromFloat(255.999 * g));
-            const ib = @as(u32, @intFromFloat(255.999 * b));
-
-            try stdout.print("{} {} {}\n", .{ ir, ig, ib });
+            const pcolor = @Vector(3, f32){ r, g, b };
+            try printColor(stdout, pcolor);
         }
     }
-
+    std.debug.print("\rDone", .{});
     return 0;
 }
