@@ -4,6 +4,27 @@ const Vec3 = @import("vec3.zig").Vec3;
 const Point3 = @import("vec3.zig").Point3;
 const Ray = @import("ray.zig").Ray;
 const ColorUtils = @import("./color.zig");
+const Color = ColorUtils.Color;
+
+pub fn hit_sphere(center: Point3, radius: f64, r: Ray) bool {
+    const oc = center.sub(r.origin());
+    const a = r.direction().dot(r.direction());
+    const b = r.direction().dot(oc) * (-2.0);
+    const c = oc.dot(oc) - (radius * radius);
+    const discriminant = (b * b) - (4 * a * c);
+    return discriminant >= 0;
+}
+
+pub fn ray_color(r: Ray) Color {
+    if (hit_sphere(Point3.init(0, 0, -1), 0.5, r)) {
+        return Color.init(1, 0, 0);
+    }
+
+    const unit_direction = r.direction().unit_vector();
+    const a = 0.5 * (unit_direction.y() + 1.0);
+    // std.debug.print("a: {}, y: {}\n", .{ a, unit_direction.y() });
+    return (Color.init(1.0, 1.0, 1.0).mul(1.0 - a)).add(Color.init(0.5, 0.7, 1.0).mul(a));
+}
 
 pub fn main() !u8 {
 
@@ -34,6 +55,7 @@ pub fn main() !u8 {
     const viewport_upper_left = camera_center.sub(Vec3.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
 
     //pixel 0,0 - the first pixel location
+    //BE VERY CAREFUL WITH EXPRESSIONS SUCH AS THIS ONE, VERY EASY TO MESS UP WITHOUT OPERATOR OVERLOADING.
     const pixel00_loc = pixel_delta_u.add(pixel_delta_v).mul(0.5).add(viewport_upper_left);
     //Render
 
@@ -47,7 +69,7 @@ pub fn main() !u8 {
             const ray_direction = pixel_center.sub(camera_center);
             const r = Ray.init(camera_center, ray_direction);
 
-            const pcolor = Ray.ray_color(r);
+            const pcolor = ray_color(r);
             try ColorUtils.printColor(stdout, pcolor);
         }
     }

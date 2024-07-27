@@ -33,7 +33,7 @@ pub const Vec3 = struct {
     }
 
     pub fn dot(u: Vec3, self: Vec3) f64 {
-        return @reduce(.Add, u * self.v);
+        return @reduce(.Add, u.v * self.v);
     }
 
     pub fn cross(u: Vec3, self: Vec3) Vec3 {
