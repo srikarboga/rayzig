@@ -2,6 +2,7 @@ const std = @import("std");
 const Vec3 = @import("vec3.zig").Vec3;
 const Point3 = @import("vec3.zig").Point3;
 const Color = @import("color.zig").Color;
+const vec = @Vector(3, f64);
 
 pub const Ray = struct {
     orig: Point3,
@@ -22,6 +23,6 @@ pub const Ray = struct {
     }
 
     pub fn at(self: Ray, t: f64) Vec3 {
-        return self.orig + @as(Vec3, @splat(t)) * self.dir;
+        return self.dir.mul(Vec3.init(t, t, t)).add(self.orig);
     }
 };

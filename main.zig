@@ -6,18 +6,24 @@ const Ray = @import("ray.zig").Ray;
 const ColorUtils = @import("./color.zig");
 const Color = ColorUtils.Color;
 
-pub fn hit_sphere(center: Point3, radius: f64, r: Ray) bool {
+pub fn hit_sphere(center: Point3, radius: f64, r: Ray) f64 {
     const oc = center.sub(r.origin());
     const a = r.direction().dot(r.direction());
     const b = r.direction().dot(oc) * (-2.0);
     const c = oc.dot(oc) - (radius * radius);
     const discriminant = (b * b) - (4 * a * c);
-    return discriminant >= 0;
+    if (discriminant < 0) {
+        return -1.0;
+    } else {
+        return (-b - @sqrt(discriminant)) / (2.0 * a);
+    }
 }
 
 pub fn ray_color(r: Ray) Color {
-    if (hit_sphere(Point3.init(0, 0, -1), 0.5, r)) {
-        return Color.init(1, 0, 0);
+    const t = hit_sphere(Point3.init(0, 0, -1), 0.5, r);
+    if (t > 0.0) {
+        const normal = r.at(t).sub(Vec3.init(0, 0, -1)).unit_vector();
+        return Color.init(normal.x() + 1, normal.y() + 1, normal.z() + 1).mul(0.5);
     }
 
     const unit_direction = r.direction().unit_vector();
