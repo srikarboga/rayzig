@@ -8,10 +8,11 @@ const Color = ColorUtils.Color;
 const Sphere = @import("hittable.zig").Sphere;
 const HitRecord = @import("hittable.zig").HitRecord;
 const World = @import("hittable.zig").World;
+const Interval = @import("interval.zig").Interval;
 
 pub fn ray_color(r: Ray, world: *World) Color {
     var rec: HitRecord = undefined;
-    if (world.hit(0, 10000, &rec, r)) {
+    if (world.hit(Interval.init(0, 10000), &rec, r)) {
         return rec.normal.add(Color.init(1, 1, 1)).mul(0.5);
     }
     const unit_direction = r.direction().unit_vector();

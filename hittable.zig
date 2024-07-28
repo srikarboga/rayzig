@@ -3,6 +3,7 @@ const Vec3 = @import("vec3.zig").Vec3;
 const Point3 = @import("vec3.zig").Point3;
 const Ray = @import("ray.zig").Ray;
 const ArrayList = std.ArrayList;
+const Interval = @import("interval.zig").Interval;
 
 pub const HitRecord = struct {
     p: Point3,
@@ -20,7 +21,7 @@ pub const Sphere = struct {
     center: Point3,
     radius: f64,
 
-    pub fn hit(self: Sphere, ray_tmin: f64, ray_tmax: f64, rec: *HitRecord, r: Ray) bool {
+    pub fn hit(self: Sphere, ray_t: Interval, rec: *HitRecord, r: Ray) bool {
         const oc = self.center.sub(r.origin());
         const a = r.direction().length_squared();
         const h = r.direction().dot(oc);
@@ -32,9 +33,9 @@ pub const Sphere = struct {
         const sqrtd = @sqrt(discriminant);
 
         var root = (h - sqrtd) / a;
-        if (root <= ray_tmin or ray_tmax <= root) {
+        if (!ray_t.surrounds(root)) {
             root = (h + sqrtd) / a;
-            if (root <= ray_tmin or ray_tmax <= root)
+            if (!ray_t.surrounds(root))
                 return false;
         }
 
@@ -59,13 +60,13 @@ pub const World = struct {
         self.spheres.deinit();
     }
 
-    pub fn hit(self: *World, t_min: f64, t_max: f64, hit_rec: *HitRecord, ray: Ray) bool {
+    pub fn hit(self: *World, ray_t: Interval, hit_rec: *HitRecord, ray: Ray) bool {
         var maybe_hit: HitRecord = undefined;
         var hit_anything = false;
-        var closest_so_far = t_max;
+        var closest_so_far = ray_t.max;
 
         for (self.spheres.items) |sphere| {
-            if (sphere.hit(t_min, closest_so_far, &maybe_hit, ray)) {
+            if (sphere.hit(Interval.init(ray_t.min, closest_so_far), &maybe_hit, ray)) {
                 hit_anything = true;
                 closest_so_far = maybe_hit.t;
                 hit_rec.* = maybe_hit;
