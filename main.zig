@@ -5,27 +5,15 @@ const Point3 = @import("vec3.zig").Point3;
 const Ray = @import("ray.zig").Ray;
 const ColorUtils = @import("./color.zig");
 const Color = ColorUtils.Color;
+const Sphere = @import("hittable.zig").Sphere;
+const HitRecord = @import("hittable.zig").HitRecord;
+const World = @import("hittable.zig").World;
 
-pub fn hit_sphere(center: Point3, radius: f64, r: Ray) f64 {
-    const oc = center.sub(r.origin());
-    const a = r.direction().dot(r.direction());
-    const b = r.direction().dot(oc) * (-2.0);
-    const c = oc.dot(oc) - (radius * radius);
-    const discriminant = (b * b) - (4 * a * c);
-    if (discriminant < 0) {
-        return -1.0;
-    } else {
-        return (-b - @sqrt(discriminant)) / (2.0 * a);
+pub fn ray_color(r: Ray, world: *World) Color {
+    var rec: HitRecord = undefined;
+    if (world.hit(0, 10000, &rec, r)) {
+        return rec.normal.add(Color.init(1, 1, 1)).mul(0.5);
     }
-}
-
-pub fn ray_color(r: Ray) Color {
-    const t = hit_sphere(Point3.init(0, 0, -1), 0.5, r);
-    if (t > 0.0) {
-        const normal = r.at(t).sub(Vec3.init(0, 0, -1)).unit_vector();
-        return Color.init(normal.x() + 1, normal.y() + 1, normal.z() + 1).mul(0.5);
-    }
-
     const unit_direction = r.direction().unit_vector();
     const a = 0.5 * (unit_direction.y() + 1.0);
     // std.debug.print("a: {}, y: {}\n", .{ a, unit_direction.y() });
@@ -42,8 +30,16 @@ pub fn main() !u8 {
     var image_height = @as(u64, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio));
     image_height = if (image_height < 1) 1 else image_height;
 
-    // Camera
+    //World
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+    var world = World.init(allocator);
+    defer world.deinit();
+    try world.spheres.append(Sphere{ .center = Point3.init(0, 0, -1), .radius = 0.5 });
+    try world.spheres.append(Sphere{ .center = Point3.init(0, -100.5, -1), .radius = 100 });
 
+    // Camera
     const focal_length = 1.0;
     const viewport_height = 2.0;
     const viewport_width = viewport_height * (@as(f64, @floatFromInt(image_width)) / @as(f64, @floatFromInt(image_height)));
@@ -75,7 +71,7 @@ pub fn main() !u8 {
             const ray_direction = pixel_center.sub(camera_center);
             const r = Ray.init(camera_center, ray_direction);
 
-            const pcolor = ray_color(r);
+            const pcolor = ray_color(r, &world);
             try ColorUtils.printColor(stdout, pcolor);
         }
     }
