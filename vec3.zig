@@ -8,6 +8,11 @@ pub const Vec3 = struct {
         return .{ .v = vec{ x_init, y_init, z_init } };
     }
 
+    pub fn random(min: f64, max: f64) Vec3 {
+        const rand = std.crypto.random;
+        return Vec3.init(min + (max - min) * rand.float(f64), min + (max - min) * rand.float(f64), min + (max - min) * rand.float(f64));
+    }
+
     pub fn x(self: Vec3) f64 {
         return self.v[0];
     }
@@ -30,6 +35,26 @@ pub const Vec3 = struct {
 
     pub fn unit_vector(self: Vec3) Vec3 {
         return .{ .v = self.v / @as(vec, @splat(length(self))) };
+    }
+
+    pub fn random_in_unit_sphere() Vec3 {
+        while (true) {
+            const p = Vec3.random(-1, 1);
+            if (p.length_squared() < 1) return p;
+        }
+    }
+
+    pub fn random_on_hemisphere(normal: Vec3) Vec3 {
+        const on_unit_sphere = random_unit_vector();
+        if (on_unit_sphere.dot(normal) > 0.0) {
+            return on_unit_sphere;
+        } else {
+            return on_unit_sphere.mul(-1);
+        }
+    }
+
+    pub fn random_unit_vector() Vec3 {
+        return random_in_unit_sphere().unit_vector();
     }
 
     pub fn dot(u: Vec3, self: Vec3) f64 {

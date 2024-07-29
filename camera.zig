@@ -25,12 +25,14 @@ pub const Camera = struct {
     pixel00_loc: Vec3,
     samples_per_pixel: u64,
     pixel_samples_scale: f64,
+    max_depth: u64,
 
     pub fn init() Camera {
         // Image
         const aspect_ratio: f64 = 16.0 / 9.0;
         const image_width = 400;
-        const samples_per_pixel = 10;
+        const samples_per_pixel = 100;
+        const max_depth = 50;
         const pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(samples_per_pixel));
         // image_height calculation using aspect ratio
         var image_height = @as(u64, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio));
@@ -73,6 +75,7 @@ pub const Camera = struct {
             .pixel00_loc = pixel00_loc,
             .samples_per_pixel = samples_per_pixel,
             .pixel_samples_scale = pixel_samples_scale,
+            .max_depth = max_depth,
         };
     }
 
@@ -85,7 +88,7 @@ pub const Camera = struct {
                 var pixel_color = Color.init(0, 0, 0);
                 for (0..self.samples_per_pixel) |_| {
                     const r = self.get_ray(i, j);
-                    pixel_color = pixel_color.add(ray_color(r, world));
+                    pixel_color = pixel_color.add(ray_color(r, world, self.max_depth));
                 }
                 // const pixel_center = self.pixel00_loc.add(self.pixel_delta_u.mul(i)).add(self.pixel_delta_v.mul(j));
                 // const ray_direction = pixel_center.sub(self.camera_center);
@@ -98,10 +101,15 @@ pub const Camera = struct {
         std.debug.print("\rDone                      \n", .{});
     }
 
-    pub fn ray_color(r: Ray, world: *World) Color {
+    pub fn ray_color(r: Ray, world: *World, depth: u64) Color {
+        if (depth <= 0) {
+            return Color.init(0, 0, 0);
+        }
         var rec: HitRecord = undefined;
-        if (world.hit(Interval.init(0, 10000), &rec, r)) {
-            return rec.normal.add(Color.init(1, 1, 1)).mul(0.5);
+        if (world.hit(Interval.init(0.001, 10000), &rec, r)) {
+            const direction = Vec3.random_unit_vector().add(rec.normal);
+            return ray_color(Ray.init(rec.p, direction), world, depth - 1).mul(0.5);
+            // return rec.normal.add(Color.init(1, 1, 1)).mul(0.5);
         }
         const unit_direction = r.direction().unit_vector();
         const a = 0.5 * (unit_direction.y() + 1.0);
