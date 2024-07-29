@@ -29,6 +29,14 @@ pub fn main() !u8 {
     try world.spheres.append(Sphere{ .center = Point3.init(-1.0, 0, -1.0), .radius = 0.4, .mat = &material_bubble });
     try world.spheres.append(Sphere{ .center = Point3.init(1.0, 0, -1.0), .radius = 0.5, .mat = &material_right });
 
+    // const R = @cos(std.math.pi / 4.0);
+    //
+    // var material_left = Material.Lambertian.init(Color.init(0, 0, 1));
+    // var material_right = Material.Lambertian.init(Color.init(1, 0, 0));
+    //
+    // try world.spheres.append(Sphere{ .center = Point3.init(-R, 0, -1.0), .radius = R, .mat = &material_left });
+    // try world.spheres.append(Sphere{ .center = Point3.init(R, 0, -1.0), .radius = R, .mat = &material_right });
+
     var camera = Camera.init();
     try camera.render(&world);
     //printing basic info ab the image in ppm format

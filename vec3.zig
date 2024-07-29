@@ -78,11 +78,11 @@ pub const Vec3 = struct {
     }
 
     pub fn cross(u: Vec3, self: Vec3) Vec3 {
-        return Vec3{
-            u[1] * self.v[2] - u[2] * self.v[1],
-            u[2] * self.v[0] - u[0] * self.v[2],
-            u[0] * self.v[1] - u[1] * self.v[0],
-        };
+        return Vec3.init(
+            u.v[1] * self.v[2] - u.v[2] * self.v[1],
+            u.v[2] * self.v[0] - u.v[0] * self.v[2],
+            u.v[0] * self.v[1] - u.v[1] * self.v[0],
+        );
     }
 
     pub fn add(self: Vec3, other: anytype) Vec3 {

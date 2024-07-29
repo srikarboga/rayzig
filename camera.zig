@@ -10,6 +10,10 @@ const World = @import("hittable.zig").World;
 const Interval = @import("interval.zig").Interval;
 const Material = @import("material.zig").Material;
 
+fn degrees_to_radians(degrees: f64) f64 {
+    return degrees * std.math.pi / 180.0;
+}
+
 pub const Camera = struct {
     aspect_ratio: f64,
     image_width: u64,
@@ -27,6 +31,10 @@ pub const Camera = struct {
     samples_per_pixel: u64,
     pixel_samples_scale: f64,
     max_depth: u64,
+    vfov: u64,
+    lookfrom: Point3,
+    lookat: Point3,
+    vup: Vec3,
 
     pub fn init() Camera {
         // Image
@@ -34,27 +42,45 @@ pub const Camera = struct {
         const image_width = 400;
         const samples_per_pixel = 100;
         const max_depth = 50;
+
+        const vfov = 20;
+        const lookfrom = Point3.init(-2, 2, 1);
+        const lookat = Point3.init(0, 0, -1);
+        const vup = Vec3.init(0, 1, 0);
+
+        var v: Vec3 = undefined;
+        var u: Vec3 = undefined;
+        var w: Vec3 = undefined;
+
         const pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(samples_per_pixel));
         // image_height calculation using aspect ratio
         var image_height = @as(u64, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio));
         image_height = if (image_height < 1) 1 else image_height;
 
+        const camera_center = lookfrom;
         // Camera
-        const focal_length = 1.0;
-        const viewport_height = 2.0;
+        const focal_length = (lookfrom.sub(lookat)).length();
+        const theta = degrees_to_radians(vfov);
+        const h = @tan(theta / 2);
+        const viewport_height = 2.0 * h * focal_length;
         const viewport_width = viewport_height * (@as(f64, @floatFromInt(image_width)) / @as(f64, @floatFromInt(image_height)));
-        const camera_center = Point3.init(0, 0, 0);
+        // const camera_center = Point3.init(0, 0, 0);
+
+        // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
+        w = lookfrom.sub(lookat).unit_vector();
+        u = vup.cross(w).unit_vector();
+        v = w.cross(u);
 
         // Caclulate the vectors accross the horizontal and down the vertical viewport edges
-        const viewport_u = Vec3.init(viewport_width, 0, 0);
-        const viewport_v = Vec3.init(0, -viewport_height, 0);
+        const viewport_u = u.mul(viewport_width);
+        const viewport_v = v.mul(-1).mul(viewport_height);
 
-        // Calculate the vectors across teh horizontal and down the vertical viewport edges.
+        // Calculate the vectors across the horizontal and down the vertical viewport edges.
         const pixel_delta_u = viewport_u.div(image_width);
         const pixel_delta_v = viewport_v.div(image_height);
 
         // Calculate the location of the upper left pixel
-        const viewport_upper_left = camera_center.sub(Vec3.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
+        const viewport_upper_left = camera_center.sub(w.mul(focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
 
         //pixel 0,0 - the first pixel location
         //BE VERY CAREFUL WITH EXPRESSIONS SUCH AS THIS ONE, VERY EASY TO MESS UP WITHOUT OPERATOR OVERLOADING.
@@ -77,6 +103,10 @@ pub const Camera = struct {
             .samples_per_pixel = samples_per_pixel,
             .pixel_samples_scale = pixel_samples_scale,
             .max_depth = max_depth,
+            .vfov = vfov,
+            .lookfrom = lookfrom,
+            .lookat = lookat,
+            .vup = vup,
         };
     }
 
