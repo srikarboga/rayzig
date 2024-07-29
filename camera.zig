@@ -18,7 +18,7 @@ pub const Camera = struct {
     aspect_ratio: f64,
     image_width: u64,
     image_height: u64,
-    focal_length: f64,
+    // focal_length: f64,
     viewport_height: f64,
     viewport_width: f64,
     camera_center: Point3,
@@ -35,6 +35,10 @@ pub const Camera = struct {
     lookfrom: Point3,
     lookat: Point3,
     vup: Vec3,
+    defocus_angle: f64,
+    focus_dist: f64,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 
     pub fn init() Camera {
         // Image
@@ -48,9 +52,15 @@ pub const Camera = struct {
         const lookat = Point3.init(0, 0, -1);
         const vup = Vec3.init(0, 1, 0);
 
+        const defocus_angle = 10.0;
+        const focus_dist = 3.4;
+
         var v: Vec3 = undefined;
         var u: Vec3 = undefined;
         var w: Vec3 = undefined;
+
+        var defocus_disk_u: Vec3 = undefined;
+        var defocus_disk_v: Vec3 = undefined;
 
         const pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(samples_per_pixel));
         // image_height calculation using aspect ratio
@@ -59,10 +69,10 @@ pub const Camera = struct {
 
         const camera_center = lookfrom;
         // Camera
-        const focal_length = (lookfrom.sub(lookat)).length();
+        // const focal_length = (lookfrom.sub(lookat)).length();
         const theta = degrees_to_radians(vfov);
         const h = @tan(theta / 2);
-        const viewport_height = 2.0 * h * focal_length;
+        const viewport_height = 2.0 * h * focus_dist;
         const viewport_width = viewport_height * (@as(f64, @floatFromInt(image_width)) / @as(f64, @floatFromInt(image_height)));
         // const camera_center = Point3.init(0, 0, 0);
 
@@ -80,17 +90,21 @@ pub const Camera = struct {
         const pixel_delta_v = viewport_v.div(image_height);
 
         // Calculate the location of the upper left pixel
-        const viewport_upper_left = camera_center.sub(w.mul(focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
+        const viewport_upper_left = camera_center.sub(w.mul(focus_dist)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
 
         //pixel 0,0 - the first pixel location
         //BE VERY CAREFUL WITH EXPRESSIONS SUCH AS THIS ONE, VERY EASY TO MESS UP WITHOUT OPERATOR OVERLOADING.
         const pixel00_loc = pixel_delta_u.add(pixel_delta_v).mul(0.5).add(viewport_upper_left);
-        //Render
+
+        const defocus_radius = focus_dist * @tan(degrees_to_radians(defocus_angle / 2.0));
+        defocus_disk_u = u.mul(defocus_radius);
+        defocus_disk_v = v.mul(defocus_radius);
+
         return .{
             .aspect_ratio = aspect_ratio,
             .image_width = image_width,
             .image_height = image_height,
-            .focal_length = focal_length,
+            // .focal_length = focal_length,
             .viewport_height = viewport_height,
             .viewport_width = viewport_width,
             .camera_center = camera_center,
@@ -107,6 +121,10 @@ pub const Camera = struct {
             .lookfrom = lookfrom,
             .lookat = lookat,
             .vup = vup,
+            .defocus_angle = defocus_angle,
+            .focus_dist = focus_dist,
+            .defocus_disk_u = defocus_disk_u,
+            .defocus_disk_v = defocus_disk_v,
         };
     }
 
@@ -168,7 +186,8 @@ pub const Camera = struct {
     pub fn get_ray(self: Camera, i: usize, j: usize) Ray {
         const offset = sample_square();
         const pixel_sample = self.pixel00_loc.add(self.pixel_delta_u.mul(offset.x() + @as(f64, @floatFromInt(i)))).add(self.pixel_delta_v.mul(offset.y() + @as(f64, @floatFromInt(j))));
-        const ray_origin = self.camera_center;
+
+        const ray_origin = if (self.defocus_angle <= 0) self.camera_center else self.defocus_disk_sample();
         const ray_direction = pixel_sample.sub(ray_origin);
 
         return Ray.init(ray_origin, ray_direction);
@@ -177,5 +196,10 @@ pub const Camera = struct {
     pub fn sample_square() Vec3 {
         const rand = std.crypto.random;
         return Vec3.init(rand.float(f64) - 0.5, rand.float(f64) - 0.5, 0);
+    }
+
+    pub fn defocus_disk_sample(self: Camera) Vec3 {
+        const p = Vec3.random_in_unit_disk();
+        return self.camera_center.add(self.defocus_disk_u.mul(p.x())).add(self.defocus_disk_v.mul(p.y()));
     }
 };

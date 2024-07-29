@@ -42,6 +42,16 @@ pub const Vec3 = struct {
         return .{ .v = self.v / @as(vec, @splat(length(self))) };
     }
 
+    pub fn random_in_unit_disk() Vec3 {
+        const rand = std.crypto.random;
+        while (true) {
+            const p = Vec3.init(2 * rand.float(f64) - 1, 2 * rand.float(f64) - 1, 0);
+            if (p.length_squared() < 1) {
+                return p;
+            }
+        }
+    }
+
     pub fn random_in_unit_sphere() Vec3 {
         while (true) {
             const p = Vec3.random(-1, 1);
