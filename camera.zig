@@ -119,6 +119,10 @@ pub const Camera = struct {
                     if (rec.mat.*.Metal.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
                     return Color.init(0, 0, 0);
                 },
+                .Dielectric => {
+                    if (rec.mat.*.Dielectric.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    return Color.init(0, 0, 0);
+                },
             }
 
             // const direction = Vec3.random_unit_vector().add(rec.normal);

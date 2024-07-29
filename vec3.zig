@@ -62,6 +62,13 @@ pub const Vec3 = struct {
         return v.sub(n.mul(Vec3.dot(v, n)).mul(2));
     }
 
+    pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) Vec3 {
+        const cos_theta = @min(uv.mul(-1).dot(n), 1.0);
+        const r_out_perp = (uv.add(n.mul(cos_theta))).mul(etai_over_etat);
+        const r_out_parallel = n.mul(-@sqrt(@abs(1.0 - r_out_perp.length_squared())));
+        return r_out_perp.add(r_out_parallel);
+    }
+
     pub fn random_unit_vector() Vec3 {
         return random_in_unit_sphere().unit_vector();
     }
