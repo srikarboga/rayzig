@@ -27,16 +27,18 @@ pub const Material = union(enum) {
 
     pub const Metal = struct {
         albedo: Color,
+        fuzz: f64,
 
-        pub fn init(albedo: Color) Material {
-            return .{ .Metal = .{ .albedo = albedo } };
+        pub fn init(albedo: Color, fuzz: f64) Material {
+            return .{ .Metal = .{ .albedo = albedo, .fuzz = fuzz } };
         }
 
         pub fn scatter(self: Metal, r_in: Ray, hit_record: *HitRecord, attenuation: *Color, scattered: *Ray) bool {
-            const reflected = Vec3.reflect(r_in.direction(), hit_record.normal);
+            var reflected = Vec3.reflect(r_in.direction(), hit_record.normal);
+            reflected = reflected.unit_vector().add(Vec3.random_unit_vector().mul(self.fuzz));
             scattered.* = Ray.init(hit_record.p, reflected);
             attenuation.* = self.albedo;
-            return true;
+            return (scattered.direction().dot(hit_record.normal) > 0);
         }
     };
 };
