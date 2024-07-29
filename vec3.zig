@@ -33,6 +33,11 @@ pub const Vec3 = struct {
         return @reduce(.Add, self.v * self.v);
     }
 
+    pub fn near_zero(self: Vec3) bool {
+        const s = 1e-8;
+        return (@abs(self.v[0]) < s and @abs(self.v[1]) < s and @abs(self.v[2]) < s);
+    }
+
     pub fn unit_vector(self: Vec3) Vec3 {
         return .{ .v = self.v / @as(vec, @splat(length(self))) };
     }
@@ -51,6 +56,10 @@ pub const Vec3 = struct {
         } else {
             return on_unit_sphere.mul(-1);
         }
+    }
+
+    pub fn reflect(v: Vec3, n: Vec3) Vec3 {
+        return v.sub(n.mul(Vec3.dot(v, n)).mul(2));
     }
 
     pub fn random_unit_vector() Vec3 {

@@ -8,6 +8,7 @@ const Sphere = @import("hittable.zig").Sphere;
 const HitRecord = @import("hittable.zig").HitRecord;
 const World = @import("hittable.zig").World;
 const Interval = @import("interval.zig").Interval;
+const Material = @import("material.zig").Material;
 
 pub const Camera = struct {
     aspect_ratio: f64,
@@ -107,8 +108,21 @@ pub const Camera = struct {
         }
         var rec: HitRecord = undefined;
         if (world.hit(Interval.init(0.001, 10000), &rec, r)) {
-            const direction = Vec3.random_unit_vector().add(rec.normal);
-            return ray_color(Ray.init(rec.p, direction), world, depth - 1).mul(0.5);
+            var scattered: Ray = undefined;
+            var attenuation: Color = undefined;
+            switch (rec.mat.*) {
+                .Lambertian => {
+                    if (rec.mat.*.Lambertian.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    return Color.init(0, 0, 0);
+                },
+                .Metal => {
+                    if (rec.mat.*.Metal.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    return Color.init(0, 0, 0);
+                },
+            }
+
+            // const direction = Vec3.random_unit_vector().add(rec.normal);
+            // return ray_color(Ray.init(rec.p, direction), world, depth - 1).mul(0.5);
             // return rec.normal.add(Color.init(1, 1, 1)).mul(0.5);
         }
         const unit_direction = r.direction().unit_vector();
