@@ -1,12 +1,17 @@
 const Vec3 = @import("vec3.zig").Vec3;
 const std = @import("std");
+const Interval = @import("interval.zig").Interval;
 
 pub const Color = Vec3;
 pub fn printColor(writer: anytype, color: Color) !void {
     // std.debug.print("{}\n", .{color.x()});
-    const ir = @as(i64, @intFromFloat(255.999 * color.x()));
-    const ig = @as(i64, @intFromFloat(255.999 * color.y()));
-    const ib = @as(i64, @intFromFloat(255.999 * color.z()));
+    const r = color.x();
+    const g = color.y();
+    const b = color.z();
 
-    try writer.print("{} {} {}\n", .{ ir, ig, ib });
+    const intensity = Interval.init(0.000, 0.999);
+    const rbyte: i64 = @intFromFloat(256 * intensity.clamp(r));
+    const gbyte: i64 = @intFromFloat(256 * intensity.clamp(g));
+    const bbyte: i64 = @intFromFloat(256 * intensity.clamp(b));
+    try writer.print("{} {} {}\n", .{ rbyte, gbyte, bbyte });
 }

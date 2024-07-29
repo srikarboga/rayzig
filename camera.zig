@@ -23,12 +23,15 @@ pub const Camera = struct {
     pixel_delta_v: Vec3,
     viewport_upper_left: Vec3,
     pixel00_loc: Vec3,
+    samples_per_pixel: u64,
+    pixel_samples_scale: f64,
 
     pub fn init() Camera {
         // Image
         const aspect_ratio: f64 = 16.0 / 9.0;
         const image_width = 400;
-
+        const samples_per_pixel = 10;
+        const pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(samples_per_pixel));
         // image_height calculation using aspect ratio
         var image_height = @as(u64, @intFromFloat(@as(f64, @floatFromInt(image_width)) / aspect_ratio));
         image_height = if (image_height < 1) 1 else image_height;
@@ -68,6 +71,8 @@ pub const Camera = struct {
             .pixel_delta_v = pixel_delta_v,
             .viewport_upper_left = viewport_upper_left,
             .pixel00_loc = pixel00_loc,
+            .samples_per_pixel = samples_per_pixel,
+            .pixel_samples_scale = pixel_samples_scale,
         };
     }
 
@@ -77,12 +82,17 @@ pub const Camera = struct {
         for (0..self.image_height) |j| {
             std.debug.print("\rScanlines remaining: {} ", .{self.image_height - j});
             for (0..self.image_width) |i| {
-                const pixel_center = self.pixel00_loc.add(self.pixel_delta_u.mul(i)).add(self.pixel_delta_v.mul(j));
-                const ray_direction = pixel_center.sub(self.camera_center);
-                const r = Ray.init(self.camera_center, ray_direction);
-
-                const pcolor = ray_color(r, world);
-                try ColorUtils.printColor(stdout, pcolor);
+                var pixel_color = Color.init(0, 0, 0);
+                for (0..self.samples_per_pixel) |_| {
+                    const r = self.get_ray(i, j);
+                    pixel_color = pixel_color.add(ray_color(r, world));
+                }
+                // const pixel_center = self.pixel00_loc.add(self.pixel_delta_u.mul(i)).add(self.pixel_delta_v.mul(j));
+                // const ray_direction = pixel_center.sub(self.camera_center);
+                // const r = Ray.init(self.camera_center, ray_direction);
+                //
+                // const pcolor = ray_color(r, world);
+                try ColorUtils.printColor(stdout, pixel_color.mul(self.pixel_samples_scale));
             }
         }
         std.debug.print("\rDone                      \n", .{});
@@ -97,5 +107,19 @@ pub const Camera = struct {
         const a = 0.5 * (unit_direction.y() + 1.0);
         // std.debug.print("a: {}, y: {}\n", .{ a, unit_direction.y() });
         return (Color.init(1.0, 1.0, 1.0).mul(1.0 - a)).add(Color.init(0.5, 0.7, 1.0).mul(a));
+    }
+
+    pub fn get_ray(self: Camera, i: usize, j: usize) Ray {
+        const offset = sample_square();
+        const pixel_sample = self.pixel00_loc.add(self.pixel_delta_u.mul(offset.x() + @as(f64, @floatFromInt(i)))).add(self.pixel_delta_v.mul(offset.y() + @as(f64, @floatFromInt(j))));
+        const ray_origin = self.camera_center;
+        const ray_direction = pixel_sample.sub(ray_origin);
+
+        return Ray.init(ray_origin, ray_direction);
+    }
+
+    pub fn sample_square() Vec3 {
+        const rand = std.crypto.random;
+        return Vec3.init(rand.float(f64) - 0.5, rand.float(f64) - 0.5, 0);
     }
 };
