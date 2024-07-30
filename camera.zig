@@ -43,17 +43,17 @@ pub const Camera = struct {
     pub fn init() Camera {
         // Image
         const aspect_ratio: f64 = 16.0 / 9.0;
-        const image_width = 400;
-        const samples_per_pixel = 100;
+        const image_width = 1080;
+        const samples_per_pixel = 50;
         const max_depth = 50;
 
         const vfov = 20;
-        const lookfrom = Point3.init(-2, 2, 1);
-        const lookat = Point3.init(0, 0, -1);
+        const lookfrom = Point3.init(13, 2, 3);
+        const lookat = Point3.init(0, 0, 0);
         const vup = Vec3.init(0, 1, 0);
 
-        const defocus_angle = 10.0;
-        const focus_dist = 3.4;
+        const defocus_angle = 0.6;
+        const focus_dist = 10.0;
 
         var v: Vec3 = undefined;
         var u: Vec3 = undefined;
@@ -158,17 +158,17 @@ pub const Camera = struct {
         if (world.hit(Interval.init(0.001, 10000), &rec, r)) {
             var scattered: Ray = undefined;
             var attenuation: Color = undefined;
-            switch (rec.mat.*) {
+            switch (rec.mat) {
                 .Lambertian => {
-                    if (rec.mat.*.Lambertian.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    if (rec.mat.Lambertian.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
                     return Color.init(0, 0, 0);
                 },
                 .Metal => {
-                    if (rec.mat.*.Metal.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    if (rec.mat.Metal.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
                     return Color.init(0, 0, 0);
                 },
                 .Dielectric => {
-                    if (rec.mat.*.Dielectric.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
+                    if (rec.mat.Dielectric.scatter(r, &rec, &attenuation, &scattered)) return attenuation.mul(ray_color(scattered, world, depth - 1));
                     return Color.init(0, 0, 0);
                 },
             }
