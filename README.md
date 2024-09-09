@@ -18,4 +18,4 @@ It takes about 10 mins to render with a ryzen 5900x cpu with the default setting
 ![image](https://github.com/user-attachments/assets/4b96989c-d170-4865-9e91-732fc2147d6d)
 
 ---
-The code for this project could use a lot of improvements as it was my first project in this language. Goals for the future are to refactor and clean up the code and add multithreading.
+The code for this project could use a lot of improvements since it was my first project in this language. Goals for the future are to refactor and clean up the code and add multithreading.
